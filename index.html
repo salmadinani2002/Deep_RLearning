@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep RL — Cours Interactif</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --border: rgba(255,255,255,0.07);
+    --accent: #7c6dfa;
+    --accent2: #fa6d8d;
+    --accent3: #6dfad3;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --card-bg: rgba(255,255,255,0.03);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    padding: 2rem 0;
+    z-index: 100;
+    transition: transform 0.3s;
+  }
+  .sidebar-logo {
+    padding: 0 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+  }
+  .sidebar-logo .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--accent3);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+  .sidebar-logo h2 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+  .nav-section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 1rem 1.5rem 0.4rem;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.55rem 1.5rem;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--muted);
+    transition: all 0.2s;
+    border-left: 2px solid transparent;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(124,109,250,0.08); }
+  .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(124,109,250,0.1); }
+  .nav-item .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    margin-top: auto;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: flex; justify-content: space-between;
+  }
+  .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 2px; transition: width 0.5s; }
+
+  /* MAIN */
+  .main { margin-left: 260px; padding: 0; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 6rem 5rem;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(124,109,250,0.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 50% at 20% 80%, rgba(109,250,211,0.07) 0%, transparent 60%);
+  }
+  .hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 40px),
+                      repeating-linear-gradient(90deg, transparent, transparent 39px, var(--border) 40px);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(124,109,250,0.15);
+    border: 1px solid rgba(124,109,250,0.3);
+    border-radius: 100px;
+    padding: 0.3rem 1rem;
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--accent);
+    margin-bottom: 2rem;
+    width: fit-content;
+    position: relative; z-index: 1;
+  }
+  .hero-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent3); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.0;
+    margin-bottom: 1.5rem;
+    position: relative; z-index: 1;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero h1 .stroke { -webkit-text-stroke: 1px var(--accent2); color: transparent; }
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--muted);
+    max-width: 55ch;
+    margin-bottom: 3rem;
+    position: relative; z-index: 1;
+  }
+  .hero-tags {
+    display: flex; gap: 0.6rem; flex-wrap: wrap;
+    position: relative; z-index: 1;
+    margin-bottom: 3rem;
+  }
+  .tag-chip {
+    font-size: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    padding: 0.35rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tag-chip:hover, .tag-chip.c1 { border-color: var(--accent); color: var(--accent); background: rgba(124,109,250,0.1); }
+  .tag-chip.c2 { border-color: var(--accent2); color: var(--accent2); background: rgba(250,109,141,0.1); }
+  .tag-chip.c3 { border-color: var(--accent3); color: var(--accent3); background: rgba(109,250,211,0.1); }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: var(--accent);
+    color: white;
+    padding: 0.9rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    position: relative; z-index: 1;
+    text-decoration: none;
+  }
+  .cta-btn:hover { background: #9182ff; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,109,250,0.4); }
+  .cta-btn svg { transition: transform 0.2s; }
+  .cta-btn:hover svg { transform: translateX(4px); }
+
+  /* SECTIONS */
+  .section {
+    padding: 5rem;
+    border-top: 1px solid var(--border);
+  }
+  .section.visible { opacity: 1; transform: none; }
+  .section-header { margin-bottom: 3rem; }
+  .section-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    line-height: 1.1;
+  }
+  .section-title em { font-style: normal; color: var(--accent); }
+  .section-desc {
+    margin-top: 0.8rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    max-width: 60ch;
+  }
+
+  /* CARDS */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.2rem; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.8rem;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .card:hover { border-color: rgba(124,109,250,0.4); transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+  .card:hover::before { opacity: 1; }
+  .card-icon { font-size: 1.8rem; margin-bottom: 1rem; }
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.6rem;
+  }
+  .card-body { color: var(--muted); font-size: 0.875rem; }
+
+  /* FORMULA BOX */
+  .formula-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent3);
+  }
+  .formula-box .label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* INFO BOX */
+  .info-box {
+    border-radius: 12px;
+    padding: 1.5rem 1.8rem;
+    margin: 1.5rem 0;
+    display: flex; gap: 1rem;
+  }
+  .info-box.blue { background: rgba(124,109,250,0.08); border: 1px solid rgba(124,109,250,0.25); }
+  .info-box.pink { background: rgba(250,109,141,0.08); border: 1px solid rgba(250,109,141,0.25); }
+  .info-box.green { background: rgba(109,250,211,0.08); border: 1px solid rgba(109,250,211,0.25); }
+  .info-box .ib-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .info-box .ib-content {}
+  .info-box .ib-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .info-box .ib-text { color: var(--muted); font-size: 0.875rem; }
+
+  /* COMPARE TABLE */
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border);
+    border-radius: 12px; overflow: hidden;
+    margin: 1.5rem 0;
+  }
+  .compare-cell {
+    background: var(--surface);
+    padding: 1.5rem;
+  }
+  .compare-cell.header {
+    background: var(--surface2);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .compare-cell ul { list-style: none; }
+  .compare-cell ul li {
+    padding: 0.35rem 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+    display: flex; gap: 0.6rem; align-items: flex-start;
+  }
+  .compare-cell ul li::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+  .compare-cell.green-h .compare-title { color: var(--accent3); }
+  .compare-cell.red-h .compare-title { color: var(--accent2); }
+  .compare-title { font-weight: 600; font-size: 0.8rem; margin-bottom: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  /* TIMELINE / ALGO STEPS */
+  .algo-steps { display: flex; flex-direction: column; gap: 0; }
+  .algo-step {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .algo-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(124,109,250,0.15);
+    border: 1px solid rgba(124,109,250,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .step-content {}
+  .step-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+  .step-text { color: var(--muted); font-size: 0.85rem; }
+
+  /* TWO COLUMNS */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* ACTOR-CRITIC DIAGRAM */
+  .ac-diagram {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin: 2rem 0;
+  }
+  .ac-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    min-width: 160px;
+  }
+  .ac-box.actor { border: 2px solid var(--accent); }
+  .ac-box.critic { border: 2px solid var(--accent2); }
+  .ac-box.env { border: 2px solid var(--accent3); }
+  .ac-box .ac-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .ac-box .ac-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+  .ac-box .ac-sub { font-size: 0.75rem; color: var(--muted); }
+  .ac-arrow {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0.2rem;
+  }
+  .ac-arrow svg { color: var(--muted); }
+  .ac-arrow .lbl { font-size: 0.65rem; font-family: 'Space Mono', monospace; color: var(--accent3); }
+
+  /* PPO CLIP DIAGRAM */
+  .ppo-ratio {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;
+  }
+  .ratio-zone {
+    flex: 1; min-width: 180px;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 1.2rem;
+    text-align: center;
+  }
+  .ratio-zone .rz-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.5rem;
+  }
+  .ratio-zone .rz-formula {
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent3);
+    font-weight: 700;
+  }
+  .ratio-zone.good { border: 1px solid rgba(109,250,211,0.4); }
+  .ratio-zone.bad { border: 1px solid rgba(250,109,141,0.4); }
+  .ratio-zone.clipped { border: 1px solid rgba(124,109,250,0.4); }
+
+  /* HIGHLIGHT TEXT */
+  mark {
+    background: rgba(124,109,250,0.2);
+    color: var(--accent);
+    border-radius: 3px;
+    padding: 0 3px;
+  }
+  .text-accent { color: var(--accent); }
+  .text-accent2 { color: var(--accent2); }
+  .text-accent3 { color: var(--accent3); }
+
+  /* QUIZ SECTION */
+  .quiz-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+  }
+  .quiz-q {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 1.2rem;
+  }
+  .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+  .quiz-opt {
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    background: var(--surface);
+  }
+  .quiz-opt:hover { border-color: var(--accent); color: var(--accent); }
+  .quiz-opt.correct { border-color: var(--accent3); background: rgba(109,250,211,0.1); color: var(--accent3); }
+  .quiz-opt.wrong { border-color: var(--accent2); background: rgba(250,109,141,0.1); color: var(--accent2); }
+  .quiz-feedback {
+    margin-top: 1rem;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    display: none;
+  }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok { background: rgba(109,250,211,0.1); color: var(--accent3); }
+  .quiz-feedback.ko { background: rgba(250,109,141,0.1); color: var(--accent2); }
+
+  /* MOBILE MENU */
+  .mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem; left: 1rem;
+    z-index: 200;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem;
+    cursor: pointer;
+    color: var(--text);
+  }
+  @media (max-width: 768px) {
+    .mobile-toggle { display: flex; }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .hero, .section { padding: 3rem 1.5rem; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* CHAPTER BADGE */
+  .chap-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    border: 1px solid rgba(250,109,141,0.3);
+    background: rgba(250,109,141,0.07);
+    border-radius: 6px;
+    padding: 0.25rem 0.7rem;
+    margin-bottom: 0.8rem;
+    display: inline-block;
+  }
+
+  p { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+  h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.15rem; margin: 1.5rem 0 0.7rem; color: var(--text); }
+  h4 { font-weight: 600; font-size: 0.95rem; margin: 1.2rem 0 0.5rem; color: var(--text); }
+
+  /* QCM STYLES */
+  .qcm-wrapper { display: flex; flex-direction: column; gap: 0; }
+  .qcm-item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 1.2rem;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .qcm-item.answered-ok { border-color: rgba(109,250,211,0.4); }
+  .qcm-item.answered-ko { border-color: rgba(250,109,141,0.3); }
+  .qcm-header {
+    display: flex; align-items: flex-start; gap: 1rem;
+    padding: 1.4rem 1.8rem;
+    background: var(--surface2);
+  }
+  .qcm-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(124,109,250,0.15);
+    border: 1px solid rgba(124,109,250,0.3);
+    border-radius: 6px;
+    padding: 0.2rem 0.55rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .qcm-q { font-size: 0.92rem; font-weight: 500; line-height: 1.5; }
+  .qcm-choices {
+    display: flex; flex-direction: column; gap: 0;
+    padding: 0.8rem 1.8rem 1.2rem;
+    background: var(--surface);
+  }
+  .qcm-choice {
+    display: flex; align-items: center; gap: 0.9rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--muted);
+    transition: all 0.18s;
+    border: 1px solid transparent;
+    margin-bottom: 0.35rem;
+    user-select: none;
+  }
+  .qcm-choice:hover { background: rgba(255,255,255,0.04); color: var(--text); border-color: var(--border); }
+  .qcm-choice .letter {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .qcm-choice.selected .letter { background: rgba(124,109,250,0.2); border-color: var(--accent); color: var(--accent); }
+  .qcm-choice.selected { color: var(--text); border-color: rgba(124,109,250,0.3); background: rgba(124,109,250,0.05); }
+  .qcm-choice.correct { color: var(--accent3); border-color: rgba(109,250,211,0.4); background: rgba(109,250,211,0.07); }
+  .qcm-choice.correct .letter { background: rgba(109,250,211,0.2); border-color: var(--accent3); color: var(--accent3); }
+  .qcm-choice.wrong { color: var(--accent2); border-color: rgba(250,109,141,0.4); background: rgba(250,109,141,0.07); }
+  .qcm-choice.wrong .letter { background: rgba(250,109,141,0.2); border-color: var(--accent2); color: var(--accent2); }
+  .qcm-choice.reveal-correct { color: var(--accent3); border-color: rgba(109,250,211,0.25); background: rgba(109,250,211,0.04); }
+  .qcm-choice.reveal-correct .letter { background: rgba(109,250,211,0.15); border-color: var(--accent3); color: var(--accent3); }
+  .qcm-choice.disabled { pointer-events: none; opacity: 0.5; }
+  .qcm-choice.disabled.correct, .qcm-choice.disabled.wrong, .qcm-choice.disabled.reveal-correct { opacity: 1; }
+  .qcm-explanation {
+    margin: 0.2rem 0 0.5rem;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    display: none;
+  }
+  .qcm-explanation.show { display: block; }
+  .qcm-explanation.ok { background: rgba(109,250,211,0.08); color: var(--accent3); border: 1px solid rgba(109,250,211,0.2); }
+  .qcm-explanation.ko { background: rgba(250,109,141,0.08); color: var(--accent2); border: 1px solid rgba(250,109,141,0.2); }
+  .qcm-validate {
+    display: flex; justify-content: flex-end;
+    padding: 0 1.8rem 1.2rem;
+    background: var(--surface);
+  }
+  .btn-validate {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.55rem 1.4rem;
+    border-radius: 8px;
+    border: 1px solid var(--accent);
+    background: rgba(124,109,250,0.15);
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-validate:hover { background: var(--accent); color: white; }
+  .btn-validate:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* SCORE BOARD */
+  .score-board {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+  .score-board.show { display: block; }
+  .score-big {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .score-label { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+  .score-bar-wrap { background: var(--border); border-radius: 4px; height: 6px; margin: 1rem auto; max-width: 300px; }
+  .score-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .score-msg { font-size: 1rem; font-weight: 500; margin-top: 1rem; }
+  .btn-retry {
+    margin-top: 1.5rem;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-retry:hover { border-color: var(--accent); color: var(--accent); }
+  .qcm-submit-wrap { display: flex; justify-content: center; margin-top: 1.5rem; }
+  .btn-submit-all {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    background: var(--accent);
+    color: white;
+    padding: 0.85rem 2rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-submit-all:hover { background: #9182ff; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(124,109,250,0.4); }
+  .btn-submit-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+</style>
+</head>
+<body>
+
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path d="M3 12h18M3 6h18M3 18h18"/>
+  </svg>
+</button>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="tag">Cours Interactif</div>
+    <h2>Deep Reinforcement Learning</h2>
+  </div>
+
+  <span class="nav-section-title">Introduction</span>
+  <a class="nav-item active" href="#hero" onclick="setActive(this)"><span class="dot"></span>Accueil</a>
+
+  <span class="nav-section-title">Policy-Based</span>
+  <a class="nav-item" href="#policy-based" onclick="setActive(this)"><span class="dot"></span>Policy-Based Methods</a>
+  <a class="nav-item" href="#policy-network" onclick="setActive(this)"><span class="dot"></span>Policy Networks</a>
+  <a class="nav-item" href="#gradient" onclick="setActive(this)"><span class="dot"></span>Policy Gradient</a>
+  <a class="nav-item" href="#actor-critic" onclick="setActive(this)"><span class="dot"></span>Actor-Critic</a>
+
+  <span class="nav-section-title">PPO</span>
+  <a class="nav-item" href="#ppo" onclick="setActive(this)"><span class="dot"></span>PPO Overview</a>
+  <a class="nav-item" href="#clipping" onclick="setActive(this)"><span class="dot"></span>Mécanisme Clipping</a>
+  <a class="nav-item" href="#avantages-ppo" onclick="setActive(this)"><span class="dot"></span>Pourquoi PPO ?</a>
+
+  <span class="nav-section-title">A2C & SAC</span>
+  <a class="nav-item" href="#a2c" onclick="setActive(this)"><span class="dot"></span>A2C</a>
+  <a class="nav-item" href="#sac" onclick="setActive(this)"><span class="dot"></span>SAC</a>
+
+  <span class="nav-section-title">Évaluation</span>
+  <a class="nav-item" href="#recap" onclick="setActive(this)"><span class="dot"></span>Récapitulatif</a>
+  <a class="nav-item" href="#qcm" onclick="setActive(this)"><span class="dot"></span>QCM Final</a>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Progression</span>
+      <span id="pct">0%</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="pbar" style="width:0%"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-badge">Policy-Based Methods | Actor-Critic | PPO</div>
+    <h1>Deep<br><em>Reinforcement</em><br><span class="stroke">Learning</span></h1>
+    <p class="hero-sub">De l'apprentissage basé sur la politique jusqu'à l'optimisation proximale — une exploration interactive des méthodes modernes du Deep RL.</p>
+    <div class="hero-tags">
+      <span class="tag-chip c1">Policy Gradient</span>
+      <span class="tag-chip c2">REINFORCE</span>
+      <span class="tag-chip c3">Actor-Critic</span>
+      <span class="tag-chip c1">PPO</span>
+      <span class="tag-chip">TD Error</span>
+      <span class="tag-chip">Clipping</span>
+    </div>
+    <a href="#policy-based" class="cta-btn">
+      Commencer le cours
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </a>
+  </section>
+
+  <!-- 1. POLICY-BASED INTRO -->
+  <section class="section" id="policy-based">
+    <div class="section-header">
+      <div class="section-num">01 — Introduction</div>
+      <h2 class="section-title">Méthodes <em>Policy-Based</em></h2>
+      <p class="section-desc">Au lieu d'apprendre une fonction de valeur Q(s,a), on entraîne directement le réseau à produire une politique π(s).</p>
+    </div>
+
+    <div class="chap-badge">Value-Based vs Policy-Based</div>
+    <p>Les chapitres précédents couvraient le DQN, qui apprend <mark>Q(s,a)</mark> pour déduire l'action optimale. Ici, on change de paradigme : le réseau produit <mark>directement la politique</mark>.</p>
+
+    <div class="info-box blue">
+      <span class="ib-icon">📌</span>
+      <div class="ib-content">
+        <div class="ib-title">Définition — Policy Network</div>
+        <div class="ib-text">Au lieu de produire des valeurs Q(s,a), le Policy Network produit une <strong>distribution de probabilités</strong> sur les actions. L'agent choisit ensuite une action par échantillonnage selon cette distribution.</div>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent)">🧠 Value-Based (DQN)</div></div>
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent2)">🎯 Policy-Based</div></div>
+      <div class="compare-cell">
+        <ul>
+          <li>Apprend Q(s,a) → valeur par action</li>
+          <li>Choisit argmax Q</li>
+          <li>Nécessite ε-greedy pour explorer</li>
+          <li>Difficile avec espaces continus</li>
+        </ul>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Apprend π(s) → probabilité par action</li>
+          <li>Choisit par échantillonnage</li>
+          <li>Exploration naturelle via stochasticité</li>
+          <li>Gère les espaces continus</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. POLICY NETWORK -->
+  <section class="section" id="policy-network">
+    <div class="section-header">
+      <div class="section-num">02 — Policy Network</div>
+      <h2 class="section-title">Réseaux de <em>Politique</em></h2>
+      <p class="section-desc">Comment un réseau décide directement quelle action effectuer à partir de l'état courant.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">📤</div>
+        <div class="card-title">Sortie du réseau</div>
+        <div class="card-body">Distribution de probabilités sur les actions — ex : <em>gauche 30%, droite 70%</em>. Couche softmax en sortie.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎲</div>
+        <div class="card-title">Sélection d'action</div>
+        <div class="card-body">L'agent <strong>tire</strong> une action selon les probabilités. Analogie : une boîte à papiers pondérée — les meilleures actions apparaissent plus souvent.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔍</div>
+        <div class="card-title">Exploration naturelle</div>
+        <div class="card-body">Pas de ε-greedy ! Les actions prometteuses ont plus de chances d'être choisies tout en maintenant une exploration stochastique.</div>
+      </div>
+    </div>
+
+    <div class="info-box green">
+      <span class="ib-icon">🎭</span>
+      <div class="ib-content">
+        <div class="ib-title">Analogie — La boîte à papiers</div>
+        <div class="ib-text">Imaginez une boîte contenant plusieurs papiers représentant les actions possibles. Plus une action est jugée utile par le réseau, plus elle apparaît fréquemment dans la boîte. L'agent tire ensuite une action aléatoirement.</div>
+      </div>
+    </div>
+
+    <p>Cette approche est utilisée dans <mark>REINFORCE</mark> et <mark>PPO</mark>. Contrairement à DQN, aucune stratégie complexe comme l'Experience Replay ou les Target Networks n'est nécessaire.</p>
+  </section>
+
+  <!-- 3. POLICY GRADIENT -->
+  <section class="section" id="gradient">
+    <div class="section-header">
+      <div class="section-num">03 — Policy Gradient</div>
+      <h2 class="section-title">Augmenter les <em>Bonnes</em> Probabilités</h2>
+      <p class="section-desc">Le principe fondamental : renforcer les actions qui ont mené à de bonnes récompenses.</p>
+    </div>
+
+    <div class="info-box blue">
+      <span class="ib-icon">⚡</span>
+      <div class="ib-content">
+        <div class="ib-title">Règle fondamentale du Policy Gradient</div>
+        <div class="ib-text">
+          <strong>Bonne trajectoire</strong> → augmenter les probabilités des actions qui l'ont produite<br>
+          <strong>Mauvaise trajectoire</strong> → diminuer les probabilités de ces actions
+        </div>
+      </div>
+    </div>
+
+    <h3>Avantages & Inconvénients</h3>
+    <div class="compare-grid">
+      <div class="compare-cell header">
+        <div class="compare-title green-h" style="color:var(--accent3)">✅ Avantages</div>
+      </div>
+      <div class="compare-cell header">
+        <div class="compare-title red-h" style="color:var(--accent2)">❌ Inconvénients</div>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Espaces d'actions continus (paramètres gaussiens)</li>
+          <li>Politiques stochastiques naturelles</li>
+          <li>Idéal pour environnements partiellement observables</li>
+          <li>Optimise directement l'objectif de performance</li>
+        </ul>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Convergence lente — beaucoup d'épisodes nécessaires</li>
+          <li>Haute variance des gradients → instabilité</li>
+          <li>Très sensible au taux d'apprentissage</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. ACTOR-CRITIC -->
+  <section class="section" id="actor-critic">
+    <div class="section-header">
+      <div class="section-num">04 — Actor-Critic</div>
+      <h2 class="section-title">Architecture <em>Deep Actor-Critic</em></h2>
+      <p class="section-desc">Combiner deux réseaux pour pallier les limites du Policy Gradient pur.</p>
+    </div>
+
+    <div class="ac-diagram">
+      <div class="ac-box env">
+        <div class="ac-icon">🌍</div>
+        <div class="ac-name">Environnement</div>
+        <div class="ac-sub">État s_t, Récompense r_t</div>
+      </div>
+      <div class="ac-arrow">
+        <svg width="40" height="20" viewBox="0 0 40 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 10h32M28 4l8 6-8 6"/>
+        </svg>
+        <span class="lbl">s_t, r_t</span>
+      </div>
+      <div class="ac-box actor">
+        <div class="ac-icon">🎭</div>
+        <div class="ac-name">Actor — π_θ</div>
+        <div class="ac-sub">Politique · Décide quoi faire</div>
+      </div>
+      <div class="ac-arrow">
+        <svg width="40" height="20" viewBox="0 0 40 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 10h32M28 4l8 6-8 6"/>
+        </svg>
+        <span class="lbl">δ_t</span>
+      </div>
+      <div class="ac-box critic">
+        <div class="ac-icon">🎯</div>
+        <div class="ac-name">Critic — V_φ</div>
+        <div class="ac-sub">Valeur · Juge la qualité</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3>🎭 L'Actor (Politique π_θ)</h3>
+        <ul style="list-style:none">
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Entrée :</strong> état s_t</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Sortie :</strong> distribution sur les actions (softmax)</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Rôle :</strong> décide quoi faire</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Optimise :</strong> maximise l'avantage estimé</li>
+        </ul>
+      </div>
+      <div>
+        <h3>🎯 Le Critic (Valeur V_φ)</h3>
+        <ul style="list-style:none">
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Entrée :</strong> état s_t</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Sortie :</strong> valeur scalaire V_φ(s_t)</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Rôle :</strong> juge la qualité de l'état</li>
+          <li style="color:var(--muted); font-size:.875rem; padding:.3rem 0">→ <strong>Optimise :</strong> minimise l'erreur TD²</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>L'Erreur TD (Temporal Difference)</h3>
+    <p>La communication entre les deux réseaux passe par l'erreur TD :</p>
+
+    <div class="formula-box">
+      <div class="label">Formule — Erreur TD (Avantage)</div>
+      δ_t = r_t + γ · V_φ(s_{t+1}) − V_φ(s_t)
+    </div>
+
+    <div class="algo-steps">
+      <div class="algo-step">
+        <div class="step-num">r_t</div>
+        <div class="step-content">
+          <div class="step-title">Récompense immédiate</div>
+          <div class="step-text">La récompense reçue à l'étape t après avoir pris l'action.</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">γV</div>
+        <div class="step-content">
+          <div class="step-title">Valeur future actualisée</div>
+          <div class="step-text">γ · V_φ(s_{t+1}) — estimation de la valeur future, pondérée par le facteur de décompte γ.</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">-V</div>
+        <div class="step-content">
+          <div class="step-title">Valeur actuelle soustraite</div>
+          <div class="step-text">V_φ(s_t) — valeur de l'état actuel selon le Critic. Si δ_t > 0, l'action était mieux qu'attendue.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col" style="margin-top:1.5rem">
+      <div class="info-box pink" style="margin:0">
+        <span class="ib-icon">🔄</span>
+        <div class="ib-content">
+          <div class="ib-title">Mise à jour du Critic</div>
+          <div class="ib-text">Minimise L(φ) = δ_t² — apprentissage par régression (TD learning).</div>
+        </div>
+      </div>
+      <div class="info-box blue" style="margin:0">
+        <span class="ib-icon">⬆️</span>
+        <div class="ib-content">
+          <div class="ib-title">Mise à jour de l'Actor</div>
+          <div class="ib-text">Maximise ∇_θ J ≈ E[∇_θ log π_θ(a_t|s_t) · δ_t] — gradient pondéré par δ_t.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. PPO OVERVIEW -->
+  <section class="section" id="ppo">
+    <div class="section-header">
+      <div class="section-num">05 — PPO</div>
+      <h2 class="section-title"><em>PPO</em> — Proximal Policy Optimization</h2>
+      <p class="section-desc">L'algorithme standard de l'industrie — utilisé par OpenAI pour GPT, robotique, jeux vidéo.</p>
+    </div>
+
+    <div class="info-box green">
+      <span class="ib-icon">🏆</span>
+      <div class="ib-content">
+        <div class="ib-title">Standard de l'industrie</div>
+        <div class="ib-text">PPO est une évolution de l'Actor-Critic. OpenAI l'utilise pour entraîner ChatGPT, les robots, et les agents de jeux. Sa popularité vient de sa <strong>stabilité</strong> et sa <strong>simplicité</strong> relative.</div>
+      </div>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">🎮</div>
+        <div class="card-title">Jeux (Discret)</div>
+        <div class="card-body">Actions discrètes — haut, bas, gauche, droite. PPO excelle dans les environnements Atari et autres jeux vidéo.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🤖</div>
+        <div class="card-title">Robotique (Continu)</div>
+        <div class="card-body">Contrôle de moteurs avec valeurs continues. PPO gère naturellement les espaces d'actions continus via des distributions gaussiennes.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <div class="card-title">RLHF (LLMs)</div>
+        <div class="card-body">Reinforcement Learning from Human Feedback. PPO est utilisé dans l'entraînement de ChatGPT pour aligner les réponses sur les préférences humaines.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. CLIPPING -->
+  <section class="section" id="clipping">
+    <div class="section-header">
+      <div class="section-num">06 — Mécanisme Clipping</div>
+      <h2 class="section-title">La Fonction <em>Objectif Tronquée</em></h2>
+      <p class="section-desc">L'innovation centrale de PPO : empêcher des mises à jour trop agressives de la politique.</p>
+    </div>
+
+    <p>Le problème des méthodes précédentes : une seule mauvaise mise à jour pouvait <mark>effondrer la performance</mark> de l'agent. PPO résout cela avec le <strong>clipping</strong>.</p>
+
+    <div class="formula-box">
+      <div class="label">Ratio de probabilité</div>
+      r_t(θ) = π_θ(a_t | s_t) / π_θ_old(a_t | s_t)
+    </div>
+
+    <p>Ce ratio compare la nouvelle politique avec l'ancienne. PPO le force à rester dans l'intervalle :</p>
+
+    <div class="formula-box" style="border-color: var(--accent3)">
+      <div class="label">Intervalle de clipping</div>
+      r_t(θ) ∈ [1 − ε,  1 + ε]     (ε ≈ 0.2 en pratique)
+    </div>
+
+    <h3>Les trois zones du ratio</h3>
+    <div class="ppo-ratio">
+      <div class="ratio-zone bad">
+        <div class="rz-label" style="color:var(--accent2)">r_t &lt; 1-ε</div>
+        <div class="rz-formula" style="color:var(--accent2)">COUPÉ (bas)</div>
+        <p style="font-size:.75rem; margin-top:.5rem; color:var(--muted)">Politique trop différente — mise à jour bloquée par le bas.</p>
+      </div>
+      <div class="ratio-zone clipped">
+        <div class="rz-label" style="color:var(--accent)">1-ε ≤ r_t ≤ 1+ε</div>
+        <div class="rz-formula">ZONE SÛRE</div>
+        <p style="font-size:.75rem; margin-top:.5rem; color:var(--muted)">Mise à jour autorisée — ratio proche de 1, politique similaire.</p>
+      </div>
+      <div class="ratio-zone bad">
+        <div class="rz-label" style="color:var(--accent2)">r_t &gt; 1+ε</div>
+        <div class="rz-formula" style="color:var(--accent2)">COUPÉ (haut)</div>
+        <p style="font-size:.75rem; margin-top:.5rem; color:var(--muted)">Politique trop différente — mise à jour bloquée par le haut.</p>
+      </div>
+    </div>
+
+    <div class="formula-box" style="border-color: var(--accent2)">
+      <div class="label">Fonction objectif PPO (CLIP)</div>
+      L_CLIP(θ) = E[min(r_t(θ)·Â_t,  clip(r_t(θ), 1-ε, 1+ε)·Â_t)]
+    </div>
+  </section>
+
+  <!-- 7. WHY PPO -->
+  <section class="section" id="avantages-ppo">
+    <div class="section-header">
+      <div class="section-num">07 — Pourquoi PPO ?</div>
+      <h2 class="section-title">PPO vs les <em>Alternatives</em></h2>
+      <p class="section-desc">Ce qui distingue PPO des autres algorithmes et en fait le standard industriel.</p>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent3)">✅ Qualités de PPO</div></div>
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent)">⚡ PPO vs DQN</div></div>
+      <div class="compare-cell">
+        <ul>
+          <li>Stabilité — mises à jour conservatives</li>
+          <li>Simplicité — optimisation du 1er ordre (Adam)</li>
+          <li>Versatilité — discret et continu</li>
+          <li>Pas de second ordre contrairement à TRPO</li>
+        </ul>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Pas de ε-greedy</li>
+          <li>Pas d'Experience Replay</li>
+          <li>Pas de Target Networks</li>
+          <li>Plus simple à maintenir et déboguer</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="algo-steps">
+      <div class="algo-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Collecter des trajectoires</div>
+          <div class="step-text">Faire jouer l'agent dans l'environnement avec la politique actuelle π_θ_old pour T timesteps.</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Calculer les avantages</div>
+          <div class="step-text">Estimer Â_t = δ_t + (γλ)δ_{t+1} + ... avec le Critic (GAE — Generalized Advantage Estimation).</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Optimiser avec clipping</div>
+          <div class="step-text">Maximiser L_CLIP(θ) sur K epochs avec mini-batches, en gardant r_t(θ) dans [1-ε, 1+ε].</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Mettre à jour π_θ_old</div>
+          <div class="step-text">π_θ_old ← π_θ. Recommencer depuis l'étape 1 avec la nouvelle politique de référence.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- A2C -->
+  <section class="section" id="a2c">
+    <div class="section-header">
+      <div class="section-num">08 — A2C</div>
+      <h2 class="section-title">Advantage <em>Actor-Critic</em></h2>
+      <p class="section-desc">Une version synchrone et stabilisée de l'Actor-Critic, base de nombreux algorithmes modernes.</p>
+    </div>
+
+    <div class="info-box blue">
+      <span class="ib-icon">💡</span>
+      <div class="ib-content">
+        <div class="ib-title">Qu'est-ce que A2C ?</div>
+        <div class="ib-text">A2C (Advantage Actor-Critic) est une version améliorée de l'Actor-Critic classique. Il utilise la <strong>fonction d'avantage A(s,a)</strong> à la place de la récompense brute pour réduire la variance des gradients et stabiliser l'apprentissage.</div>
+      </div>
+    </div>
+
+    <h3>Fonction d'Avantage</h3>
+    <p>Au lieu d'utiliser la récompense cumulée G_t (haute variance) ou l'erreur TD seule, A2C utilise :</p>
+
+    <div class="formula-box">
+      <div class="label">Fonction d'Avantage</div>
+      A(s_t, a_t) = Q(s_t, a_t) − V(s_t)
+    </div>
+
+    <div class="formula-box" style="border-color: var(--accent3)">
+      <div class="label">Estimation pratique (via erreur TD)</div>
+      Â_t = r_t + γ·V(s_{t+1}) − V(s_t) = δ_t
+    </div>
+
+    <div class="info-box green">
+      <span class="ib-icon">📊</span>
+      <div class="ib-content">
+        <div class="ib-title">Interprétation de A(s,a)</div>
+        <div class="ib-text">
+          <strong>A &gt; 0</strong> → l'action est meilleure que la moyenne dans cet état → augmenter sa probabilité<br>
+          <strong>A &lt; 0</strong> → l'action est pire que la moyenne → diminuer sa probabilité<br>
+          <strong>A = 0</strong> → l'action est exactement dans la moyenne → neutre
+        </div>
+      </div>
+    </div>
+
+    <h3>Mise à jour de l'Actor dans A2C</h3>
+    <div class="formula-box">
+      <div class="label">Gradient de l'Actor</div>
+      ∇_θ J(θ) = E[ ∇_θ log π_θ(a_t | s_t) · Â_t ]
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent)">Actor-Critic classique</div></div>
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent3)">A2C</div></div>
+      <div class="compare-cell">
+        <ul>
+          <li>Utilise δ_t directement (erreur TD brute)</li>
+          <li>Mise à jour à chaque step (online)</li>
+          <li>Un seul agent qui interagit</li>
+          <li>Variance encore élevée</li>
+        </ul>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Utilise Â_t (avantage normalisé)</li>
+          <li>Collecte un batch puis met à jour (synchrone)</li>
+          <li>Plusieurs workers en parallèle possibles</li>
+          <li>Variance réduite, apprentissage stable</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Algorithme A2C — Étapes</h3>
+    <div class="algo-steps">
+      <div class="algo-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <div class="step-title">Collecter T transitions</div>
+          <div class="step-text">L'agent joue T étapes dans l'environnement et collecte (s_t, a_t, r_t, s_{t+1}).</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <div class="step-title">Calculer les avantages Â_t</div>
+          <div class="step-text">Pour chaque transition : Â_t = r_t + γV(s_{t+1}) − V(s_t). Optionnellement normaliser.</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <div class="step-title">Mettre à jour le Critic</div>
+          <div class="step-text">Minimiser L_V = Σ (r_t + γV(s_{t+1}) − V(s_t))² — régression TD sur le batch.</div>
+        </div>
+      </div>
+      <div class="algo-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <div class="step-title">Mettre à jour l'Actor</div>
+          <div class="step-text">Maximiser L_π = Σ log π_θ(a_t|s_t) · Â_t — policy gradient pondéré par l'avantage.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box pink">
+      <span class="ib-icon">🔗</span>
+      <div class="ib-content">
+        <div class="ib-title">A2C vs A3C</div>
+        <div class="ib-text">A3C (Asynchronous) utilise des workers asynchrones qui mettent à jour un réseau global en parallèle. A2C est la version <strong>synchrone</strong> : tous les workers attendent avant de faire la mise à jour ensemble. En pratique, A2C donne des résultats équivalents ou meilleurs.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAC -->
+  <section class="section" id="sac">
+    <div class="section-header">
+      <div class="section-num">09 — SAC</div>
+      <h2 class="section-title">Soft <em>Actor-Critic</em></h2>
+      <p class="section-desc">L'algorithme off-policy le plus efficace pour les espaces continus — basé sur le principe d'entropie maximale.</p>
+    </div>
+
+    <div class="info-box blue">
+      <span class="ib-icon">🌡️</span>
+      <div class="ib-content">
+        <div class="ib-title">Le principe central — Entropie Maximale</div>
+        <div class="ib-text">SAC ne cherche pas seulement à <strong>maximiser la récompense</strong>, mais aussi à <strong>maximiser l'entropie de la politique</strong>. Cela force l'agent à rester aussi aléatoire que possible tout en étant performant — une exploration intelligente et automatique.</div>
+      </div>
+    </div>
+
+    <h3>Objectif de SAC</h3>
+    <div class="formula-box">
+      <div class="label">Objectif — Récompense + Entropie</div>
+      J(π) = Σ E[ r(s_t, a_t) + α · H(π(·|s_t)) ]
+    </div>
+
+    <div class="two-col">
+      <div class="info-box green" style="margin:0">
+        <span class="ib-icon">🎯</span>
+        <div class="ib-content">
+          <div class="ib-title">r(s_t, a_t)</div>
+          <div class="ib-text">Récompense classique de l'environnement. SAC maximise les récompenses comme tout algorithme RL.</div>
+        </div>
+      </div>
+      <div class="info-box pink" style="margin:0">
+        <span class="ib-icon">🌀</span>
+        <div class="ib-content">
+          <div class="ib-title">α · H(π(·|s_t))</div>
+          <div class="ib-text">Terme d'entropie. H = −Σ π log π. α (température) contrôle l'équilibre exploration/exploitation.</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Architecture de SAC</h3>
+    <div class="ac-diagram">
+      <div class="ac-box actor" style="border-color: var(--accent)">
+        <div class="ac-icon">🎭</div>
+        <div class="ac-name">Actor π_θ</div>
+        <div class="ac-sub">Politique stochastique<br>Distribution gaussienne</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:.5rem;align-items:center">
+        <div class="ac-box critic" style="border-color: var(--accent2); min-width:140px">
+          <div class="ac-icon">🎯</div>
+          <div class="ac-name">Critic Q₁_φ</div>
+          <div class="ac-sub">Q(s,a) — réseau 1</div>
+        </div>
+        <div class="ac-box critic" style="border-color: var(--accent2); min-width:140px">
+          <div class="ac-icon">🎯</div>
+          <div class="ac-name">Critic Q₂_φ</div>
+          <div class="ac-sub">Q(s,a) — réseau 2</div>
+        </div>
+      </div>
+      <div class="ac-box env">
+        <div class="ac-icon">💾</div>
+        <div class="ac-name">Replay Buffer</div>
+        <div class="ac-sub">Off-policy<br>Expériences passées</div>
+      </div>
+    </div>
+
+    <h3>Innovations clés de SAC</h3>
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">🌡️</div>
+        <div class="card-title">Température α (automatique)</div>
+        <div class="card-body">α ajuste automatiquement l'équilibre exploration/exploitation. Pas de réglage manuel — SAC apprend lui-même la bonne valeur de α.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">2️⃣</div>
+        <div class="card-title">Double Critic (Clipped Double-Q)</div>
+        <div class="card-body">SAC utilise deux réseaux Q et prend le minimum : min(Q₁, Q₂). Cela évite la surestimation des valeurs Q — biais hérité de TD3.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💾</div>
+        <div class="card-title">Off-Policy + Replay Buffer</div>
+        <div class="card-body">Contrairement à PPO (on-policy), SAC réutilise les expériences passées via un Replay Buffer. Bien meilleure efficacité en données.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔄</div>
+        <div class="card-title">Politique Gaussienne</div>
+        <div class="card-body">L'Actor produit μ(s) et σ(s). L'action est échantillonnée via a ~ N(μ, σ²), puis passée par tanh pour borner l'espace continu.</div>
+      </div>
+    </div>
+
+    <div class="formula-box" style="border-color: var(--accent2)">
+      <div class="label">Perte du Critic (Double Q)</div>
+      L_Q(φ) = E[ (Q_φ(s,a) − y)² ]   où   y = r + γ · min(Q₁,Q₂)(s',ã') − α·log π(ã'|s')
+    </div>
+
+    <div class="formula-box">
+      <div class="label">Perte de l'Actor</div>
+      L_π(θ) = E[ α·log π_θ(a|s) − min(Q₁,Q₂)(s,a) ]
+    </div>
+
+    <h3>Comparaison SAC vs PPO</h3>
+    <div class="compare-grid">
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent)">PPO</div></div>
+      <div class="compare-cell header"><div class="compare-title" style="color:var(--accent3)">SAC</div></div>
+      <div class="compare-cell">
+        <ul>
+          <li>On-policy — données de la politique actuelle uniquement</li>
+          <li>Discret et continu</li>
+          <li>Pas de Replay Buffer</li>
+          <li>Stable, simple à implémenter</li>
+          <li>Exploration via clipping</li>
+        </ul>
+      </div>
+      <div class="compare-cell">
+        <ul>
+          <li>Off-policy — réutilise les expériences passées</li>
+          <li>Continu principalement</li>
+          <li>Replay Buffer obligatoire</li>
+          <li>Meilleure efficacité en données</li>
+          <li>Exploration via entropie maximale</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-box green">
+      <span class="ib-icon">🏆</span>
+      <div class="ib-content">
+        <div class="ib-title">Quand utiliser SAC ?</div>
+        <div class="ib-text">SAC est idéal pour la <strong>robotique et le contrôle continu</strong> (bras robotiques, locomotion, drones). Il excelle quand les données sont coûteuses à collecter, car son efficacité off-policy lui permet d'apprendre bien plus vite que PPO dans ces contextes.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RECAP -->
+  <section class="section" id="recap">
+    <div class="section-header">
+      <div class="section-num">10 — Récapitulatif</div>
+      <h2 class="section-title">Vue d'<em>Ensemble</em></h2>
+      <p class="section-desc">Les concepts clés du cours en un coup d'œil.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">Policy Network</div>
+        <div class="card-body">Produit π(a|s) — une distribution de probabilités sur les actions. Exploration naturelle via stochasticité.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📈</div>
+        <div class="card-title">Policy Gradient</div>
+        <div class="card-body">∇_θ J ≈ E[∇_θ log π_θ(a_t|s_t) · G_t]. Bonne trajectoire → augmenter les probabilités.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚡</div>
+        <div class="card-title">Erreur TD</div>
+        <div class="card-body">δ_t = r_t + γV(s_{t+1}) − V(s_t). Pont entre l'Actor et le Critic. Réduit la variance.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎭+🎯</div>
+        <div class="card-title">Actor-Critic</div>
+        <div class="card-body">Actor décide (politique), Critic évalue (valeur). Interaction via δ_t. Plus stable que REINFORCE pur.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✂️</div>
+        <div class="card-title">PPO Clipping</div>
+        <div class="card-body">r_t(θ) ∈ [1-ε, 1+ε]. Empêche des mises à jour trop grandes. Stabilité sans second ordre.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏆</div>
+        <div class="card-title">PPO en pratique</div>
+        <div class="card-body">Standard industriel : robotique, jeux, RLHF. Simple, stable, versatile. Adam + clipping suffit.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚖️</div>
+        <div class="card-title">A2C</div>
+        <div class="card-body">Advantage Actor-Critic. Utilise Â_t = Q(s,a)−V(s) pour réduire la variance. Version synchrone et stable de A3C.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌡️</div>
+        <div class="card-title">SAC</div>
+        <div class="card-body">Soft Actor-Critic. Maximise récompense + entropie. Off-policy, double Critic, température α auto. Idéal pour le continu.</div>
+      </div>
+    </div>
+  </section>
+  <section class="section visible" id="qcm">
+    <div class="section-header">
+      <div class="section-num">11 — Évaluation Finale</div>
+      <h2 class="section-title">QCM <em>Complet</em></h2>
+      <p class="section-desc">10 questions pour tester votre compréhension. Sélectionnez une réponse par question, puis validez.</p>
+    </div>
+
+    <div class="qcm-wrapper" id="qcm-wrapper">
+
+      <!-- Q1 -->
+      <div class="qcm-item" data-correct="B">
+        <div class="qcm-header">
+          <span class="qcm-num">Q1</span>
+          <span class="qcm-q">Dans une méthode <strong>policy-based</strong>, que produit directement le réseau de neurones ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Une valeur scalaire V(s) pour chaque état</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Une distribution de probabilités sur les actions π(a|s)</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>La valeur Q(s,a) pour chaque paire état-action</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>La récompense cumulée attendue G_t</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>B</strong> — Le Policy Network produit π(a|s), une distribution de probabilités sur les actions. C'est ce qui le distingue fondamentalement du DQN qui produit Q(s,a).</div>
+      </div>
+
+      <!-- Q2 -->
+      <div class="qcm-item" data-correct="C">
+        <div class="qcm-header">
+          <span class="qcm-num">Q2</span>
+          <span class="qcm-q">Quel est l'<strong>avantage principal</strong> des méthodes policy-based sur DQN pour les espaces d'actions continus ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Elles convergent beaucoup plus vite</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Elles nécessitent moins de données d'entraînement</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>Elles peuvent paramétrer des distributions (ex. gaussiennes) sur des espaces continus</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>Elles n'ont pas besoin de fonction de récompense</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>C</strong> — DQN ne peut pas gérer les espaces continus (argmax impossible sur ∞ actions). Les Policy Networks sortent les paramètres d'une distribution gaussienne : μ et σ, permettant d'échantillonner des actions continues.</div>
+      </div>
+
+      <!-- Q3 -->
+      <div class="qcm-item" data-correct="A">
+        <div class="qcm-header">
+          <span class="qcm-num">Q3</span>
+          <span class="qcm-q">Selon la <strong>règle fondamentale du Policy Gradient</strong>, que se passe-t-il lorsqu'une trajectoire génère une forte récompense cumulée ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>On augmente les probabilités des actions prises durant cette trajectoire</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>On diminue les probabilités pour forcer l'exploration</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>On remet les poids du réseau à zéro</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>On stocke la trajectoire dans un replay buffer</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>A</strong> — Le principe central : bonne trajectoire → ↑ probabilités des actions qui l'ont produite. Mauvaise trajectoire → ↓ probabilités. C'est le cœur de REINFORCE.</div>
+      </div>
+
+      <!-- Q4 -->
+      <div class="qcm-item" data-correct="D">
+        <div class="qcm-header">
+          <span class="qcm-num">Q4</span>
+          <span class="qcm-q">Quel est le <strong>principal inconvénient</strong> du Policy Gradient pur (REINFORCE) ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Il ne peut pas gérer les politiques stochastiques</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Il nécessite obligatoirement un Experience Replay</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>Il ne fonctionne qu'avec des espaces d'actions discrets</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>Haute variance des gradients rendant l'apprentissage instable</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>D</strong> — REINFORCE souffre d'une très haute variance dans ses gradients. C'est précisément pour résoudre ce problème qu'on introduit l'architecture Actor-Critic avec l'erreur TD.</div>
+      </div>
+
+      <!-- Q5 -->
+      <div class="qcm-item" data-correct="B">
+        <div class="qcm-header">
+          <span class="qcm-num">Q5</span>
+          <span class="qcm-q">Dans l'architecture <strong>Actor-Critic</strong>, quel est le rôle du <em>Critic</em> ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Décider quelle action effectuer à chaque étape</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Estimer la valeur V_φ(s_t) de l'état courant pour guider l'Actor</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>Calculer la récompense de l'environnement</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>Stocker les transitions dans la mémoire de l'agent</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>B</strong> — Le Critic produit une valeur scalaire V_φ(s_t). Il "juge" la qualité de l'état actuel. L'erreur TD δ_t = r_t + γV(s_{t+1}) − V(s_t) est ensuite utilisée pour mettre à jour l'Actor.</div>
+      </div>
+
+      <!-- Q6 -->
+      <div class="qcm-item" data-correct="C">
+        <div class="qcm-header">
+          <span class="qcm-num">Q6</span>
+          <span class="qcm-q">L'erreur TD δ_t = r_t + γ·V_φ(s_{t+1}) − V_φ(s_t). Que signifie δ_t &gt; 0 ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>La récompense obtenue est négative</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Le Critic a surestimé la valeur de l'état</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>L'action était meilleure qu'attendue — avantage positif</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>L'agent doit réduire son taux d'apprentissage</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>C</strong> — Si δ_t > 0, la réalité (r_t + γV(s_{t+1})) est meilleure que l'estimation V(s_t) : l'action était plus avantageuse que prévu. L'Actor augmentera la probabilité de cette action.</div>
+      </div>
+
+      <!-- Q7 -->
+      <div class="qcm-item" data-correct="A">
+        <div class="qcm-header">
+          <span class="qcm-num">Q7</span>
+          <span class="qcm-q">Comment le Critic met-il à jour ses paramètres φ ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>En minimisant L(φ) = δ_t² (erreur quadratique — régression TD)</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>En maximisant la récompense cumulée des épisodes</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>En utilisant le gradient de log π_θ pondéré par δ_t</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>En copiant périodiquement les poids de l'Actor</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>A</strong> — Le Critic apprend par régression : il minimise L(φ) = δ_t². C'est du TD learning classique. C (gradient de log π) est la mise à jour de l'Actor, pas du Critic.</div>
+      </div>
+
+      <!-- Q8 -->
+      <div class="qcm-item" data-correct="D">
+        <div class="qcm-header">
+          <span class="qcm-num">Q8</span>
+          <span class="qcm-q">Que représente le <strong>ratio r_t(θ)</strong> dans PPO ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Le rapport entre la récompense actuelle et la récompense maximale possible</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Le taux de décompte γ appliqué aux récompenses futures</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>La valeur de clipping ε utilisée dans la fonction objectif</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>Le rapport π_θ(a|s) / π_θ_old(a|s) — comparaison nouvelle vs ancienne politique</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>D</strong> — r_t(θ) = π_θ(a_t|s_t) / π_θ_old(a_t|s_t). Ce ratio mesure à quel point la nouvelle politique s'écarte de l'ancienne. Si r_t = 1, elles sont identiques. PPO le force dans [1-ε, 1+ε].</div>
+      </div>
+
+      <!-- Q9 -->
+      <div class="qcm-item" data-correct="B">
+        <div class="qcm-header">
+          <span class="qcm-num">Q9</span>
+          <span class="qcm-q">Si ε = 0.2 et que r_t(θ) = 0.7, que fait PPO avec ce ratio ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>Le ratio est accepté et la mise à jour est appliquée normalement</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>Le ratio est coupé à 1-ε = 0.8 (borne inférieure)</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>Le ratio est coupé à 1+ε = 1.2 (borne supérieure)</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>L'épisode est ignoré et la politique n'est pas mise à jour</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>B</strong> — 0.7 &lt; 1-0.2 = 0.8, donc le ratio est trop bas. PPO le coupe à la borne inférieure 0.8. Cela limite la mise à jour et empêche l'effondrement de la politique.</div>
+      </div>
+
+      <!-- Q10 -->
+      <div class="qcm-item" data-correct="C">
+        <div class="qcm-header">
+          <span class="qcm-num">Q10</span>
+          <span class="qcm-q">Pourquoi PPO est-il considéré comme plus simple que TRPO (Trust Region Policy Optimization) ?</span>
+        </div>
+        <div class="qcm-choices">
+          <div class="qcm-choice" data-letter="A"><span class="letter">A</span>PPO utilise moins de couches dans son réseau de neurones</div>
+          <div class="qcm-choice" data-letter="B"><span class="letter">B</span>PPO ne nécessite aucun réseau Critic</div>
+          <div class="qcm-choice" data-letter="C"><span class="letter">C</span>PPO utilise l'optimisation du 1er ordre (Adam) au lieu du calcul du 2nd ordre de TRPO</div>
+          <div class="qcm-choice" data-letter="D"><span class="letter">D</span>PPO ne fonctionne que sur des environnements discrets, plus simples à modéliser</div>
+        </div>
+        <div class="qcm-validate"><button class="btn-validate" disabled onclick="validateQ(this)">Valider</button></div>
+        <div class="qcm-explanation">Bonne réponse : <strong>C</strong> — TRPO calcule la matrice d'information de Fisher (second ordre), très coûteux. PPO obtient des garanties similaires via le simple clipping, compatible avec Adam (premier ordre). C'est ce qui en fait le standard industriel.</div>
+      </div>
+
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="qcm-submit-wrap">
+      <button class="btn-submit-all" id="btn-submit" disabled onclick="submitQCM()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M5 12a7 7 0 1 0 14 0A7 7 0 0 0 5 12"/></svg>
+        Voir mon score
+      </button>
+    </div>
+
+    <!-- SCORE BOARD -->
+    <div class="score-board" id="score-board">
+      <div class="score-big" id="score-big">—</div>
+      <div class="score-label">/ 10 questions correctes</div>
+      <div class="score-bar-wrap"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+      <div class="score-msg" id="score-msg"></div>
+      <button class="btn-retry" onclick="retryQCM()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+        Recommencer
+      </button>
+    </div>
+
+  </section>
+
+</main>
+
+<script>
+  // NAV ACTIVE
+  function setActive(el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelector('.sidebar').classList.remove('open');
+  }
+
+  // SCROLL PROGRESS
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = Math.round((window.scrollY / total) * 100);
+    document.getElementById('pbar').style.width = pct + '%';
+    document.getElementById('pct').textContent = pct + '%';
+  });
+
+  // INTERSECTION OBSERVER
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        const id = e.target.id;
+        document.querySelectorAll('.nav-item').forEach(n => {
+          if (n.getAttribute('href') === '#' + id) {
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+            n.classList.add('active');
+          }
+        });
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+  // QUIZ (section 09)
+  let answers = {};
+  function answer(el, correct, msg) {
+    const card = el.closest('.quiz-card');
+    const opts = card.querySelectorAll('.quiz-opt');
+    const cards = document.querySelectorAll('.quiz-card');
+    const idx = Array.from(cards).indexOf(card);
+    if (answers[idx] !== undefined) return;
+    answers[idx] = correct;
+    opts.forEach(o => o.style.pointerEvents = 'none');
+    el.classList.add(correct ? 'correct' : 'wrong');
+    const fb = document.getElementById('fb' + idx);
+    fb.textContent = (correct ? '✅ ' : '❌ ') + msg;
+    fb.className = 'quiz-feedback show ' + (correct ? 'ok' : 'ko');
+  }
+
+  // QCM (section 10)
+  const qcmState = {}; // { itemIndex: selectedLetter }
+
+  document.querySelectorAll('.qcm-item').forEach((item, idx) => {
+    item.querySelectorAll('.qcm-choice').forEach(choice => {
+      choice.addEventListener('click', () => {
+        if (item.dataset.validated) return;
+        item.querySelectorAll('.qcm-choice').forEach(c => c.classList.remove('selected'));
+        choice.classList.add('selected');
+        qcmState[idx] = choice.dataset.letter;
+        item.querySelector('.btn-validate').disabled = false;
+        checkSubmitReady();
+      });
+    });
+  });
+
+  function validateQ(btn) {
+    const item = btn.closest('.qcm-item');
+    if (item.dataset.validated) return;
+    const idx = Array.from(document.querySelectorAll('.qcm-item')).indexOf(item);
+    const selected = qcmState[idx];
+    const correct = item.dataset.correct;
+    const explanation = item.querySelector('.qcm-explanation');
+    item.dataset.validated = '1';
+    btn.disabled = true;
+    btn.textContent = '✓ Validé';
+
+    item.querySelectorAll('.qcm-choice').forEach(c => {
+      c.classList.add('disabled');
+      if (c.dataset.letter === correct) {
+        c.classList.add(selected === correct ? 'correct' : 'reveal-correct');
+      } else if (c.dataset.letter === selected && selected !== correct) {
+        c.classList.add('wrong');
+      }
+    });
+
+    explanation.className = 'qcm-explanation show ' + (selected === correct ? 'ok' : 'ko');
+    item.classList.add(selected === correct ? 'answered-ok' : 'answered-ko');
+    checkSubmitReady();
+  }
+
+  function checkSubmitReady() {
+    const total = document.querySelectorAll('.qcm-item').length;
+    const validated = document.querySelectorAll('.qcm-item[data-validated]').length;
+    document.getElementById('btn-submit').disabled = (validated < total);
+  }
+
+  function submitQCM() {
+    const items = document.querySelectorAll('.qcm-item');
+    let score = 0;
+    items.forEach((item, idx) => {
+      if (qcmState[idx] === item.dataset.correct) score++;
+    });
+    const pct = Math.round((score / items.length) * 100);
+    document.getElementById('score-big').textContent = score + '/10';
+    document.getElementById('score-bar').style.width = pct + '%';
+    const msgs = [
+      [0,3, '😕 À revoir — Relisez les chapitres IV &amp; V attentivement.'],
+      [4,5, '🙂 Pas mal ! Quelques notions à consolider.'],
+      [6,7, '👍 Bien ! Vous maîtrisez les bases du Deep RL.'],
+      [8,9, '🚀 Très bien ! Excellente compréhension.'],
+      [10,10,'🏆 Parfait ! Vous maîtrisez totalement les chapitres IV &amp; V !']
+    ];
+    const msg = msgs.find(([lo,hi]) => score >= lo && score <= hi);
+    document.getElementById('score-msg').innerHTML = msg ? msg[2] : '';
+    document.getElementById('score-board').classList.add('show');
+    document.getElementById('score-board').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('btn-submit').disabled = true;
+  }
+
+  function retryQCM() {
+    const items = document.querySelectorAll('.qcm-item');
+    items.forEach(item => {
+      delete item.dataset.validated;
+      item.classList.remove('answered-ok', 'answered-ko');
+      item.querySelectorAll('.qcm-choice').forEach(c => {
+        c.classList.remove('selected','correct','wrong','reveal-correct','disabled');
+      });
+      item.querySelector('.btn-validate').disabled = true;
+      item.querySelector('.btn-validate').textContent = 'Valider';
+      item.querySelector('.qcm-explanation').className = 'qcm-explanation';
+    });
+    Object.keys(qcmState).forEach(k => delete qcmState[k]);
+    document.getElementById('score-board').classList.remove('show');
+    document.getElementById('btn-submit').disabled = true;
+    document.getElementById('qcm').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+  <!-- FOOTER -->
+  <footer style="
+    margin-left: 260px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 2rem 3rem;
+    text-align: center;
+    background: #0a0a0f;
+  ">
+    <div style="
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: #7070a0;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    ">
+      ENIADB &nbsp;·&nbsp; Deep Reinforcement Learning
+    </div>
+    <div style="
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #fa6d8d;
+      font-weight: 700;
+    ">Dinani Salma</div>
+  </footer>
+
+</body>
+</html>
